@@ -8,10 +8,14 @@ import Orders from "./Orders";
 const Home = () => {
     const navigate = useNavigate();
     const [data, setData] = useState([])
+
+
+
     const graphData = ()=>{
         AxiosInstance().get("/chart_data").then(
             (res)=>{
                 setData(res.data);
+                console.log(res.data);
                 // console.log((res.data).reverse())
             }
         )
@@ -23,7 +27,7 @@ const Home = () => {
     const config = {
         data,
         xField: "name",
-        yField: "sum",
+        yField: 'total_amount',
         shapeField: 'column25D',
         height: 300,
     }
