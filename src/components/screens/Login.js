@@ -29,6 +29,7 @@ const Login = () => {
             }
         ).catch((err)=>{
             setLoading(false)
+            console.log(err);
             if(err.response === undefined){
                 Dialog.alert({
                     content:"Server not found",

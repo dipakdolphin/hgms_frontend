@@ -32,7 +32,7 @@ const UnitSetup = () => {
         AxiosInstance().post('/create_unit', updatedValues ).then(
             (res)=>{
                 Dialog.alert({
-                    content:"Order Created",
+                    content:"Unit Created",
                     confirmText:"OK",
                     closeOnMaskClick:true,
                     onConfirm :()=>{

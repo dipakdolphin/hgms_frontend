@@ -7,7 +7,8 @@ import {Dialog} from "antd-mobile";
 const AxiosInstance = ()=> {
 
     const axiosInstance = axios.create({
-        baseURL : "http://localhost:8080",
+        baseURL : "http://api.dipakpaswan.com.np",
+        // baseURL : "localhost:9092",
         timeout: 10000,
         headers: {
             "Content-Type": "application/json",
