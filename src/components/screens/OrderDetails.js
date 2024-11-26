@@ -2,14 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Dialog, Form, List, Tag, Input, SearchBar, Toast, Space } from 'antd-mobile';
 import AxiosInstance from '../../Utils/AxiosInstance';
 import NavHeader from './NavHeader';
-import { useLocation } from "react-router-dom";
 import { DeleteOutline } from 'antd-mobile-icons';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const SearchableList = ({ options, value, onChange, placeholder }) => {
     const [searchValue, setSearchValue] = useState('');
     const [isListVisible, setIsListVisible] = useState(false);
 
-    const filteredOptions = options.filter(option => 
+    const filteredOptions = options.filter(option =>
         option.label.toLowerCase().includes(searchValue.toLowerCase())
     );
 
@@ -26,14 +26,11 @@ const SearchableList = ({ options, value, onChange, placeholder }) => {
                 value={value ? options.find(o => o.value === value)?.label : searchValue}
                 onChange={(val) => {
                     setSearchValue(val);
-                    onChange(undefined);  // Clear the selected value when searching
+                    onChange(undefined);
                     setIsListVisible(true);
                 }}
                 onFocus={() => setIsListVisible(true)}
-                onBlur={() => {
-                    // Use setTimeout to allow click events on list items to fire before hiding the list
-                    setTimeout(() => setIsListVisible(false), 200);
-                }}
+                onBlur={() => setTimeout(() => setIsListVisible(false), 200)}
             />
             {isListVisible && (
                 <List
@@ -50,10 +47,7 @@ const SearchableList = ({ options, value, onChange, placeholder }) => {
                     }}
                 >
                     {filteredOptions.map(option => (
-                        <List.Item
-                            key={option.value}
-                            onClick={() => handleSelect(option.value)}
-                        >
+                        <List.Item key={option.value} onClick={() => handleSelect(option.value)}>
                             {option.label}
                         </List.Item>
                     ))}
@@ -64,9 +58,11 @@ const SearchableList = ({ options, value, onChange, placeholder }) => {
 };
 
 const OrderDetails = () => {
+    const navigate = useNavigate();
     const location = useLocation();
-    const [form] = Form.useForm();
     const { item } = location.state;
+
+    const [form] = Form.useForm();
     const [data, setData] = useState([]);
     const [products, setProducts] = useState([]);
     const [units, setUnits] = useState([]);
@@ -76,19 +72,17 @@ const OrderDetails = () => {
     const getOrderDetails = useCallback(() => {
         setLoading(true);
         AxiosInstance().get(`/order_details/${item.id}`)
-            .then((res) => {setData(res.data)
-                setSumTotal(res.data.reduce((acc, item) => acc + parseFloat(item.total), 0))
-            }
-    
-        )
-            .catch(() => {
-                Toast.show({
-                    content: 'Something went wrong',
-                    duration: 2000,
-                });
+            .then((res) => {
+                console.log('Order details response:', res.data);
+                setData(res.data);
+                setSumTotal(res.data.reduce((acc, item) => acc + parseFloat(item.total), 0));
+            })
+            .catch((error) => {
+                console.error('Error fetching order details:', error);
+                Toast.show({ content: 'Something went wrong', duration: 2000 });
             })
             .finally(() => setLoading(false));
-    }, [item.id]);
+    }, [item?.id]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -102,16 +96,11 @@ const OrderDetails = () => {
                 setUnits(unitsResponse.data || []);
                 getOrderDetails();
             } catch (error) {
-                console.error('Error fetching data:', error);
-                Toast.show({
-                    content: 'Error fetching data',
-                    duration: 2000,
-                });
+                Toast.show({ content: 'Error fetching data', duration: 2000 });
             } finally {
                 setLoading(false);
             }
         };
-
         fetchData();
     }, [getOrderDetails]);
 
@@ -119,18 +108,12 @@ const OrderDetails = () => {
         try {
             setLoading(true);
             await AxiosInstance().post("create_grocery_order_item", { ...values, order_id: item.id });
-            Toast.show({
-                content: "Item added",
-                duration: 2000,
-            });
+            Toast.show({ content: "Item added", duration: 2000 });
             getOrderDetails();
             Dialog.clear();
             form.resetFields();
-        } catch (err) {
-            Toast.show({
-                content: 'Something went wrong',
-                duration: 2000,
-            });
+        } catch {
+            Toast.show({ content: 'Something went wrong', duration: 2000 });
         } finally {
             setLoading(false);
         }
@@ -145,42 +128,16 @@ const OrderDetails = () => {
                 try {
                     setLoading(true);
                     await AxiosInstance().delete(`/order_details/${id}`);
-                    Toast.show({
-                        content: "Item Deleted",
-                        duration: 2000,
-                    });
+                    Toast.show({ content: "Item Deleted", duration: 2000 });
                     getOrderDetails();
-                } catch (err) {
-                    Toast.show({
-                        content: 'Something went wrong',
-                        duration: 2000,
-                    });
+                } catch {
+                    Toast.show({ content: 'Something went wrong', duration: 2000 });
                 } finally {
                     setLoading(false);
                 }
             },
         });
     };
-
-    const orderList = data.map((item, i) => (
-        <List.Item
-            key={i}
-            prefix={<span style={{ textTransform: 'capitalize' }}>{item.name}</span>}
-            extra={
-                <Space>
-                    <Tag style={{ fontSize: 15 }}>Rs.{item.total}</Tag>
-                    <Button
-                        onClick={() => handleDelete(item.id)}
-                        icon={<DeleteOutline color={"red"} />}
-                        color='danger'
-                        fill='none'
-                    />
-                </Space>
-            }
-        >
-            {item.quantity}, Rs.{item.rate}
-        </List.Item>
-    ));
 
     const showFormDialog = (onFinish, submitText) => {
         Dialog.show({
@@ -191,18 +148,8 @@ const OrderDetails = () => {
                     onFinish={onFinish}
                     footer={
                         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px' }}>
-                            <Button
-                                style={{ marginRight: '8px' }}
-                                onClick={() => {
-                                    form.resetFields();
-                                    Dialog.clear();
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button color='primary' onClick={() => form.submit()}>
-                                {submitText}
-                            </Button>
+                            <Button onClick={() => { form.resetFields(); Dialog.clear(); }}>Cancel</Button>
+                            <Button color='primary' onClick={() => form.submit()}>{submitText}</Button>
                         </div>
                     }
                 >
@@ -211,20 +158,14 @@ const OrderDetails = () => {
                         label='Product'
                         rules={[{ required: true, message: 'Product is required' }]}
                     >
-                        <SearchableList
-                            options={products.map(product => ({ label: product.name, value: product.id }))}
-                            placeholder="Search for a product"
-                        />
+                        <SearchableList options={products.map(p => ({ label: p.name, value: p.id }))} placeholder="Search for a product" />
                     </Form.Item>
                     <Form.Item
                         name='unit_id'
                         label='Unit'
                         rules={[{ required: true, message: 'Unit is required' }]}
                     >
-                        <SearchableList
-                            options={units.map(unit => ({ label: unit.unit_name, value: unit.id }))}
-                            placeholder="Search for a unit"
-                        />
+                        <SearchableList options={units.map(u => ({ label: u.unit_name, value: u.id }))} placeholder="Search for a unit" />
                     </Form.Item>
                     <Form.Item
                         name='rate'
@@ -240,17 +181,10 @@ const OrderDetails = () => {
                     >
                         <Input type="number" placeholder='Enter quantity' />
                     </Form.Item>
-                    
                 </Form>
             ),
             closeOnAction: false,
             actions: [],
-            style: {
-                width: '90%',
-                maxWidth: '500px',
-                maxHeight: '80vh',
-                overflow: 'auto'
-            },
         });
     };
 
@@ -259,19 +193,89 @@ const OrderDetails = () => {
         showFormDialog(handleFormSubmit, 'Add');
     };
 
+    const handleProductClick = (productId, productName) => {
+        if (!productId) {
+            Toast.show({ 
+                content: 'Invalid product selected', 
+                duration: 2000 
+            });
+            return;
+        }
+
+        const id = typeof productId === 'string' ? parseInt(productId, 10) : productId;
+        
+        navigate('/productPriceHistory', {
+            state: { 
+                productId: id,
+                productName: productName || 'Unknown Product'
+            }
+        });
+    };
+
     return (
         <div>
-            
             <NavHeader navName="Order Details" />
-            <h3>Total: {sumTotal}</h3>
             <div style={{ margin: 10, textAlign: 'right' }}>
                 <Button color="primary" onClick={handleCreateClick}>Add Product</Button>
             </div>
-            
             <List header="Order Details">
-                {loading ? <p>Loading...</p> : orderList}
+                {loading ? <p>Loading...</p> : data.map((item, i) => (
+                    <List.Item
+                        key={i}
+                        prefix={
+                            <Space align="center">
+                                <span
+                                    style={{ 
+                                        textTransform: 'capitalize', 
+                                        cursor: 'pointer', 
+                                        color: '#1677ff',
+                                        fontSize: 15
+                                    }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleProductClick(
+                                            item.productid,
+                                            item.name
+                                        );
+                                    }}
+                                >
+                                    {item.name}
+                                </span>
+                                <span style={{ 
+                                    fontSize: 14, 
+                                    color: '#333',
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: '500',
+                                    backgroundColor: '#f5f5f5',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px'
+                                }}>
+                                    {new Date(item.savedate).toLocaleDateString()}
+                                </span>
+                            </Space>
+                        }
+                        extra={
+                            <Space>
+                                <Tag style={{ fontSize: 15 }}>Rs.{item.total}</Tag>
+                                <Button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(item.orderid);
+                                    }}
+                                    icon={<DeleteOutline color={"red"} />}
+                                    color='danger'
+                                    fill='none'
+                                />
+                            </Space>
+                        }
+                    >
+                        {item.quantity} {item.unit}, Rs.{item.rate}
+                    </List.Item>
+                ))}
             </List>
-            
+            <p style={{ fontWeight: 'bold', fontSize: 16, textAlign: 'right', margin: 10 }}>
+                Grand Total: Rs.{sumTotal}
+            </p>
         </div>
     );
 };

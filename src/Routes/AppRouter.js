@@ -7,6 +7,7 @@ import Orders from "../components/screens/Orders";
 import OrderDetails from "../components/screens/OrderDetails";
 import ProductSetup from "../components/screens/ProductSetup";
 import UnitSetup from "../components/screens/UnitSetup";
+import ProductPriceHistory from '../components/screens/ProductPriceHistory';
 
 const AppRouter = () => {
     return (
@@ -19,6 +20,8 @@ const AppRouter = () => {
                 <Route path={"/unitSetup"} element={<UnitSetup />} />
                 <Route path={"/productSetup"} element={<ProductSetup />} />
                 <Route path={"/reset"} element={<ResetPassword />} />
+                <Route path={"/productPriceHistory"} element={<ProductPriceHistory />} />
+                
 
 
 
