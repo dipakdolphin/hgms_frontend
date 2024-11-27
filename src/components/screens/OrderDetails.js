@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Button, Dialog, Form, List, Tag, Input, SearchBar, Toast, Space } from 'antd-mobile';
+import {Button, Dialog, Form, List, Tag, Input, SearchBar, Toast, Space, Radio} from 'antd-mobile';
 import AxiosInstance from '../../Utils/AxiosInstance';
 import NavHeader from './NavHeader';
 import { DeleteOutline } from 'antd-mobile-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-const SearchableList = ({ options, value, onChange, placeholder }) => {
+const SearchableList = ({ options, value, onChange, placeholder, onFocus }) => {
     const [searchValue, setSearchValue] = useState('');
     const [isListVisible, setIsListVisible] = useState(false);
 
@@ -19,6 +19,13 @@ const SearchableList = ({ options, value, onChange, placeholder }) => {
         setSearchValue('');
     };
 
+    const handleFocus = () => {
+        setIsListVisible(true);
+        if (onFocus) {
+            onFocus();
+        }
+    };
+
     return (
         <div style={{ position: 'relative' }}>
             <SearchBar
@@ -29,7 +36,7 @@ const SearchableList = ({ options, value, onChange, placeholder }) => {
                     onChange(undefined);
                     setIsListVisible(true);
                 }}
-                onFocus={() => setIsListVisible(true)}
+                onFocus={handleFocus}
                 onBlur={() => setTimeout(() => setIsListVisible(false), 200)}
             />
             {isListVisible && (
@@ -68,12 +75,17 @@ const OrderDetails = () => {
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
     const [sumTotal, setSumTotal] = useState(0);
+    const [isActive, setIsActive] = useState(false);
+
+
 
     const getOrderDetails = useCallback(() => {
         setLoading(true);
         AxiosInstance().get(`/order_details/${item.id}`)
             .then((res) => {
-                console.log('Order details response:', res.data);
+
+                // console.log('Order details response:', res.data);
+                // console.log('Order name:', item.name);
                 setData(res.data);
                 setSumTotal(res.data.reduce((acc, item) => acc + parseFloat(item.total), 0));
             })
@@ -107,12 +119,21 @@ const OrderDetails = () => {
     const handleFormSubmit = async (values) => {
         try {
             setLoading(true);
-            await AxiosInstance().post("create_grocery_order_item", { ...values, order_id: item.id });
+            const total = parseFloat(values.rate) * parseFloat(values.quantity);
+
+            const submitData = {
+                ...values,
+                order_id: item.id,
+                total: total.toString()
+            };
+
+            await AxiosInstance().post("create_grocery_order_item", submitData);
             Toast.show({ content: "Item added", duration: 2000 });
             getOrderDetails();
             Dialog.clear();
             form.resetFields();
-        } catch {
+        } catch (error) {
+            console.error('Error adding item:', error);
             Toast.show({ content: 'Something went wrong', duration: 2000 });
         } finally {
             setLoading(false);
@@ -139,6 +160,26 @@ const OrderDetails = () => {
         });
     };
 
+    const fetchProducts = useCallback(async () => {
+        try {
+            const response = await AxiosInstance().get('/products_item');
+            setProducts(response.data || []);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            Toast.show({ content: 'Error fetching products', duration: 2000 });
+        }
+    }, []);
+
+    const fetchUnits = useCallback(async () => {
+        try {
+            const response = await AxiosInstance().get('/all_unit');
+            setUnits(response.data || []);
+        } catch (error) {
+            console.error('Error fetching units:', error);
+            Toast.show({ content: 'Error fetching units', duration: 2000 });
+        }
+    }, []);
+
     const showFormDialog = (onFinish, submitText) => {
         Dialog.show({
             content: (
@@ -158,14 +199,22 @@ const OrderDetails = () => {
                         label='Product'
                         rules={[{ required: true, message: 'Product is required' }]}
                     >
-                        <SearchableList options={products.map(p => ({ label: p.name, value: p.id }))} placeholder="Search for a product" />
+                        <SearchableList
+                            options={products.map(p => ({ label: p.name, value: p.id }))}
+                            placeholder="Search for a product"
+                            onFocus={fetchProducts}
+                        />
                     </Form.Item>
                     <Form.Item
                         name='unit_id'
                         label='Unit'
                         rules={[{ required: true, message: 'Unit is required' }]}
                     >
-                        <SearchableList options={units.map(u => ({ label: u.unit_name, value: u.id }))} placeholder="Search for a unit" />
+                        <SearchableList
+                            options={units.map(u => ({ label: u.unit_name, value: u.id }))}
+                            placeholder="Search for a unit"
+                            onFocus={fetchUnits}
+                        />
                     </Form.Item>
                     <Form.Item
                         name='rate'
@@ -195,29 +244,105 @@ const OrderDetails = () => {
 
     const handleProductClick = (productId, productName) => {
         if (!productId) {
-            Toast.show({ 
-                content: 'Invalid product selected', 
-                duration: 2000 
+            Toast.show({
+                content: 'Invalid product selected',
+                duration: 2000
             });
             return;
         }
 
         const id = typeof productId === 'string' ? parseInt(productId, 10) : productId;
-        
+
         navigate('/productPriceHistory', {
-            state: { 
+            state: {
                 productId: id,
                 productName: productName || 'Unknown Product'
             }
         });
     };
 
+    const handleNewFormSubmit = (values) => {
+        AxiosInstance().post('/products_item',  values).then(
+            (res)=>{
+                Dialog.alert({
+                    content:"Product Created",
+                    confirmText:"OK",
+                    closeOnMaskClick:true,
+                    onConfirm :()=>{
+                        form.resetFields();
+                    }
+                })
+            }
+        )
+    }
+
+    const handleCreateNewClick = () => {
+        form.resetFields();
+        setIsActive(false);
+        showFormNewDialog(handleNewFormSubmit, 'Create');
+    };
+
+    const showFormNewDialog = (onFinish, submitText) => {
+        Dialog.show({
+            content: (
+                <Form
+                    layout='horizontal'
+                    form={form}
+                    onFinish={onFinish}
+                >
+                    <Form.Item
+                        name='name'
+                        label='Name'
+                        rules={[{ required: true, message: 'Name is required' }]}
+                    >
+                        <Input placeholder='Product Name' />
+                    </Form.Item>
+                    <Form.Item
+                        name="is_active"
+                        label="Is Active?"
+                    >
+                        <Radio.Group value={isActive ? 'true' : 'false'} onChange={(value) => setIsActive(value === 'true')}>
+                            <Space direction='vertical'>
+                                <Radio value="true">True</Radio>
+                                <Radio value="false">False</Radio>
+                            </Space>
+                        </Radio.Group>
+                    </Form.Item>
+                </Form>
+            ),
+            actions: [
+                {
+                    key: 'cancel',
+                    text: 'Cancel',
+                    onClick: () => {
+                        form.resetFields();
+                        Dialog.clear();
+                    }
+                },
+                {
+                    key: 'confirm',
+                    text: submitText,
+                    bold: true,
+                    onClick: () => form.submit()
+                }
+            ],
+        });
+    };
+
     return (
         <div>
-            <NavHeader navName="Order Details" />
-            <div style={{ margin: 10, textAlign: 'right' }}>
-                <Button color="primary" onClick={handleCreateClick}>Add Product</Button>
+            <NavHeader navName={`Order Details - ${item.name}`} />
+            <div style={{ margin: 10, display:'flex', flexDirection:'row', justifyContent:"left"  }}>
+            <div>
+            <Button color="primary" onClick={handleCreateNewClick}>Add New Product</Button>
             </div>
+                <Button color="primary" style={{marginLeft:8}} onClick={handleCreateClick}>Add Product</Button>
+
+            </div>
+
+            <p style={{ fontWeight: 'bold', fontSize: 16, textAlign: 'left', margin: 10 }}>
+                Grand Total: Rs.{sumTotal}
+            </p>
             <List header="Order Details">
                 {loading ? <p>Loading...</p> : data.map((item, i) => (
                     <List.Item
@@ -225,9 +350,9 @@ const OrderDetails = () => {
                         prefix={
                             <Space align="center">
                                 <span
-                                    style={{ 
-                                        textTransform: 'capitalize', 
-                                        cursor: 'pointer', 
+                                    style={{
+                                        textTransform: 'capitalize',
+                                        cursor: 'pointer',
                                         color: '#1677ff',
                                         fontSize: 15
                                     }}
@@ -241,8 +366,8 @@ const OrderDetails = () => {
                                 >
                                     {item.name}
                                 </span>
-                                <span style={{ 
-                                    fontSize: 14, 
+                                <span style={{
+                                    fontSize: 14,
                                     color: '#333',
                                     whiteSpace: 'nowrap',
                                     fontWeight: '500',
@@ -273,9 +398,7 @@ const OrderDetails = () => {
                     </List.Item>
                 ))}
             </List>
-            <p style={{ fontWeight: 'bold', fontSize: 16, textAlign: 'right', margin: 10 }}>
-                Grand Total: Rs.{sumTotal}
-            </p>
+
         </div>
     );
 };
