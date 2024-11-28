@@ -26,14 +26,14 @@ const ProductPriceHistory = () => {
             console.error('No product ID provided');
             return;
         }
-        
+
         try {
-            console.log('Fetching price history for product:', productId);
+
             setLoading(true);
-            
+
             const response = await AxiosInstance().get(`/product_price/${productId}`);
-            console.log('Raw API response:', response.data);
-            
+
+
             if (!response.data || !Array.isArray(response.data)) {
                 console.error('Invalid data format received');
                 Toast.show({
@@ -50,9 +50,8 @@ const ProductPriceHistory = () => {
                 ordername: item.ordername || item.order_name || 'Order'
             })).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
 
-            console.log('Processed data:', processedData);
             setData(processedData);
-            
+
         } catch (error) {
             console.error('API error:', error);
             Toast.show({
@@ -78,7 +77,7 @@ const ProductPriceHistory = () => {
     return (
         <div>
             <NavHeader navName={`Price History - ${productName || 'Product'}`} />
-            
+
             {loading ? (
                 <div style={{ padding: 20, textAlign: 'center' }}>Loading...</div>
             ) : (
@@ -90,7 +89,7 @@ const ProductPriceHistory = () => {
                             <List.Item
                                 key={i}
                                 prefix={
-                                    <span style={{ 
+                                    <span style={{
                                         textTransform: 'capitalize',
                                         fontWeight: 'bold',
                                         color: '#1677ff'
@@ -110,6 +109,7 @@ const ProductPriceHistory = () => {
                     )}
                 </List>
             )}
+
         </div>
     );
 };

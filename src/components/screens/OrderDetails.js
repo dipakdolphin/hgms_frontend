@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {Button, Dialog, Form, List, Tag, Input, SearchBar, Toast, Space, Radio} from 'antd-mobile';
+import {Button, Dialog, Form, Tag, Input, SearchBar, Toast, Space, Radio, List} from 'antd-mobile';
 import AxiosInstance from '../../Utils/AxiosInstance';
 import NavHeader from './NavHeader';
 import { DeleteOutline } from 'antd-mobile-icons';
@@ -333,72 +333,73 @@ const OrderDetails = () => {
         <div>
             <NavHeader navName={`Order Details - ${item.name}`} />
             <div style={{ margin: 10, display:'flex', flexDirection:'row', justifyContent:"left"  }}>
-            <div>
-            <Button color="primary" onClick={handleCreateNewClick}>Add New Product</Button>
-            </div>
-                <Button color="primary" style={{marginLeft:8}} onClick={handleCreateClick}>Add Product</Button>
-
+                <div>
+                    <Button size={'small'} color="primary" onClick={handleCreateNewClick}>Add New Product</Button>
+                </div>
+                <Button size={'small'} color="primary" style={{marginLeft:8}} onClick={handleCreateClick}>Add Product</Button>
             </div>
 
             <p style={{ fontWeight: 'bold', fontSize: 16, textAlign: 'left', margin: 10 }}>
                 Grand Total: Rs.{sumTotal}
             </p>
-            <List header="Order Details">
-                {loading ? <p>Loading...</p> : data.map((item, i) => (
-                    <List.Item
-                        key={i}
-                        prefix={
-                            <Space align="center">
-                                <span
-                                    style={{
-                                        textTransform: 'capitalize',
-                                        cursor: 'pointer',
-                                        color: '#1677ff',
-                                        fontSize: 15
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleProductClick(
-                                            item.productid,
-                                            item.name
-                                        );
-                                    }}
-                                >
-                                    {item.name}
-                                </span>
-                                <span style={{
-                                    fontSize: 14,
-                                    color: '#333',
-                                    whiteSpace: 'nowrap',
-                                    fontWeight: '500',
-                                    backgroundColor: '#f5f5f5',
-                                    padding: '2px 8px',
-                                    borderRadius: '4px'
-                                }}>
-                                    {new Date(item.savedate).toLocaleDateString()}
-                                </span>
-                            </Space>
-                        }
-                        extra={
-                            <Space>
-                                <Tag style={{ fontSize: 15 }}>Rs.{item.total}</Tag>
-                                <Button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDelete(item.orderid);
-                                    }}
-                                    icon={<DeleteOutline color={"red"} />}
-                                    color='danger'
-                                    fill='none'
-                                />
-                            </Space>
-                        }
-                    >
-                        {item.quantity} {item.unit}, Rs.{item.rate}
-                    </List.Item>
-                ))}
-            </List>
 
+            <div style={{ margin: '10px', overflowX: 'auto' }}>
+                <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    minWidth: '300px'
+                }}>
+                    <thead>
+                        <tr style={{
+                            backgroundColor: '#f5f5f5',
+                            borderBottom: '2px solid #ddd'
+                        }}>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Date</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Product</th>
+                            <th style={{ padding: '12px', textAlign: 'left' }}>Quantity</th>
+                            <th style={{ padding: '12px', textAlign: 'right' }}>Rate</th>
+                            <th style={{ padding: '12px', textAlign: 'right' }}>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? (
+                            <tr>
+                                <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Loading...</td>
+                            </tr>
+                        ) : data.map((item, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #ddd' }}>
+                                <td style={{ padding: '12px' }}>
+                                    {new Date(item.savedate).toLocaleDateString()}
+                                </td>
+                                <td style={{ padding: '12px' }}>
+                                    <span
+                                        style={{
+                                            textTransform: 'capitalize',
+                                            cursor: 'pointer',
+                                            color: '#1677ff'
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleProductClick(item.productid, item.name);
+                                        }}
+                                    >
+                                        {item.name}
+                                    </span>
+                                </td>
+                                <td style={{ padding: '12px' }}>
+                                    {item.quantity} {item.unit}
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'right' }}>
+                                    Rs.{item.rate}
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'right' }}>
+                                    Rs.{item.total}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };
